@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerador de Rota</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+      body { font-family: sans-serif; padding: 20px; }
+      form div { margin-bottom: 10px; }
+      label { display: block; margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Gerador de Rota</h1>
+  <p>Preencha os dados para gerar a rota:</p>
+  <form action="/generate" method="post">
+      <div>
+          <label for="trackerId">Tracker ID (identificador único):</label>
+          <input type="text" id="trackerId" name="trackerId" placeholder="ex: 123abc" required>
+      </div>
+      <div>
+          <label for="origin">Origem (lat,lng):</label>
+          <input type="text" id="origin" name="origin" placeholder="-23.550520,-46.633308" required>
+      </div>
+      <div>
+          <label for="destination">Destino (lat,lng):</label>
+          <input type="text" id="destination" name="destination" placeholder="-23.559616,-46.658787" required>
+      </div>
+      <button type="submit">Gerar Rota (Tracker)</button>
+  </form>
+  <hr>
+  <h2>Visualização do Monitor</h2>
+  <p>Após gerar a rota, use o mesmo Tracker ID para visualizar a localização do visitante em tempo real.</p>
+  <p>Exemplo de URL:</p>
+  <code>https://seusite.com/monitor.html?trackerId=123abc&orig=-23.550520,-46.633308&dest=-23.559616,-46.658787</code>
+</body>
+</html>

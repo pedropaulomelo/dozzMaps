@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Rota - Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- CSS do Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <!-- CSS do Leaflet Routing Machine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
+  <style>
+      html, body {
+          height: 100%;
+          margin: 0;
+      }
+      #map {
+          height: 100%;
+          width: 100%;
+      }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Leaflet Routing Machine JS -->
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+  <!-- Plugin para marcador rotacionado (para simular seta) -->
+  <script src="https://rawgit.com/bbecquet/Leaflet.RotatedMarker/master/leaflet.rotatedMarker.js"></script>
+  
+  <script>
+    // Lê os parâmetros da URL: trackerId, orig e dest
+    const params = new URLSearchParams(window.location.search);
+    const trackerId = params.get('trackerId') || 'default';
+    const origParam = params.get('orig');
+    const destParam = params.get('dest');
+    
+    if (!origParam || !destParam) {
+      alert("Parâmetros 'orig' ou 'dest' não fornecidos.");
+      throw new Error("Faltam parâmetros na URL.");
+    }
+    
+    // Converte as coordenadas (string para array de números)
+    const originCoords = origParam.split(',').map(Number);
+    const destinationCoords = destParam.split(',').map(Number);
+    
+    // Inicializa o mapa centralizado na origem
+    const map = L.map('map', { zoomControl: false }).setView(originCoords, 18);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 22,
+      attribution: '&copy; <a href="https://carto.com/">CartoDB</a>'
+    }).addTo(map);
+    
+    // Configura a rota com o Leaflet Routing Machine
+    const routingControl = L.Routing.control({
+      waypoints: [
+        L.latLng(originCoords[0], originCoords[1]),
+        L.latLng(destinationCoords[0], destinationCoords[1])
+      ],
+      lineOptions: {
+        styles: [{ color: 'blue', opacity: 0.6, weight: 5 }]
+      },
+      createMarker: function(i, wp, nWps) {
+        // Coloca marcadores na origem e no destino
+        if (i === 0 || i === nWps - 1) {
+          return L.marker(wp.latLng);
+        }
+        return null;
+      },
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: true,
+      show: false
+    }).addTo(map);
+    
+    // Cria um marcador para representar a posição do visitante
+    const userIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/61/61168.png', // ícone de exemplo
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    });
+    let userMarker = L.marker(originCoords, { icon: userIcon, rotationAngle: 0 }).addTo(map);
+    
+    // Inicializa a conexão Socket.IO
+    const socket = io();
+    
+    // Atualiza a posição do visitante e envia os dados para o servidor
+    function updateUserPosition(position) {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const heading = position.coords.heading || 0;
+      
+      userMarker.setLatLng([lat, lng]);
+      userMarker.setRotationAngle(heading);
+      
+      // Opcional: centraliza o mapa na posição atual
+      map.setView([lat, lng], 18, { animate: true });
+      
+      // Envia a atualização via Socket.IO
+      socket.emit('locationUpdate', {
+        trackerId: trackerId,
+        lat: lat,
+        lng: lng,
+        heading: heading
+      });
+    }
+    
+    function geoError(error) {
+      console.error("Erro na geolocalização:", error);
+      alert("Erro ao obter localização: " + error.message);
+    }
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(updateUserPosition, geoError, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+      });
+    } else {
+      alert("Geolocalização não suportada pelo seu navegador.");
+    }
+    
+    console.log("Tracker ID:", trackerId);
+  </script>
+</body>
+</html>

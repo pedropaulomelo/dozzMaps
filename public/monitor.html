@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitor - Localização do Visitante</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- CSS do Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <!-- CSS do Leaflet Routing Machine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
+  <style>
+      html, body {
+          height: 100%;
+          margin: 0;
+      }
+      #map {
+          height: 100%;
+          width: 100%;
+      }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Leaflet Routing Machine JS -->
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+  <!-- Plugin para marcador rotacionado -->
+  <script src="https://rawgit.com/bbecquet/Leaflet.RotatedMarker/master/leaflet.rotatedMarker.js"></script>
+  
+  <script>
+    // Lê os parâmetros da URL: trackerId, orig e dest
+    const params = new URLSearchParams(window.location.search);
+    const trackerId = params.get('trackerId') || 'default';
+    const origParam = params.get('orig');
+    const destParam = params.get('dest');
+    
+    if (!origParam || !destParam) {
+      alert("Parâmetros 'orig' ou 'dest' não fornecidos.");
+      throw new Error("Faltam parâmetros na URL.");
+    }
+    
+    const originCoords = origParam.split(',').map(Number);
+    const destinationCoords = destParam.split(',').map(Number);
+    
+    // Inicializa o mapa centrado na origem
+    const map = L.map('map', { zoomControl: false }).setView(originCoords, 18);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 22,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Configura a rota com o Leaflet Routing Machine
+    const routingControl = L.Routing.control({
+      waypoints: [
+        L.latLng(originCoords[0], originCoords[1]),
+        L.latLng(destinationCoords[0], destinationCoords[1])
+      ],
+      lineOptions: {
+        styles: [{ color: 'blue', opacity: 0.6, weight: 5 }]
+      },
+      createMarker: function(i, wp, nWps) {
+        if (i === 0 || i === nWps - 1) {
+          return L.marker(wp.latLng);
+        }
+        return null;
+      },
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: true,
+      show: false
+    }).addTo(map);
+    
+    // Cria o marcador para mostrar a posição do visitante no monitor
+    const userIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/61/61168.png',
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    });
+    let visitorMarker = L.marker(originCoords, { icon: userIcon, rotationAngle: 0 }).addTo(map);
+    
+    // Inicializa a conexão Socket.IO e entra na sala do trackerId
+    const socket = io();
+    socket.emit('joinTrackerRoom', trackerId);
+    
+    // Quando recebe atualização de localização do tracker, atualiza o marcador
+    socket.on('locationUpdate', (data) => {
+      console.log("Atualização recebida:", data);
+      visitorMarker.setLatLng([data.lat, data.lng]);
+      visitorMarker.setRotationAngle(data.heading || 0);
+      map.setView([data.lat, data.lng], 18, { animate: true });
+    });
+    
+    console.log("Monitorando Tracker ID:", trackerId);
+  </script>
+</body>
+</html>
