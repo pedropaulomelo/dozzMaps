@@ -6,6 +6,8 @@ const Datastore = require('nedb');
 
 const app = express();
 
+// require('./integrity');
+
 // Cria o servidor HTTP e integra o Socket.IO
 const http = require('http');
 const server = http.createServer(app);
