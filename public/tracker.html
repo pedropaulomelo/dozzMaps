@@ -17,25 +17,53 @@
           height: 100%;
           width: 100%;
       }
-      .wake-button {
-          position: absolute;
-          top: 10px;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 9999;
+      /* Estilos do Modal de Instruções */
+      .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background-color: rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+      }
+      .modal-content {
+          background-color: #fff;
+          padding: 20px;
+          border-radius: 8px;
+          max-width: 500px;
+          width: 90%;
+          text-align: center;
+      }
+      .modal-content h2 {
+          margin-top: 0;
+      }
+      .modal-button {
           padding: 10px 20px;
           background: #007bff;
           color: #fff;
-          font-weight: bold;
           border: none;
           border-radius: 5px;
+          font-weight: bold;
           cursor: pointer;
+          margin-top: 20px;
       }
   </style>
 </head>
 <body>
-  <!-- Botão para ativar o Wake Lock / NoSleep -->
-  <button class="wake-button" id="wakeButton">Manter Tela Ligada</button>
+  <!-- Modal de Instruções -->
+  <div class="modal-overlay" id="instructionModal">
+    <div class="modal-content">
+      <h2>Instruções</h2>
+      <p>Siga a rota até o destino e, após a visita ou entrega, retorne até a portaria pela mesma rota.</p>
+      <p>Não saia da rota, pois a portaria estará monitorando seu deslocamento.</p>
+      <p>Clique no botão abaixo para iniciar e manter a tela ligada.</p>
+      <button class="modal-button" id="startRouteButton">Iniciar Rota</button>
+    </div>
+  </div>
 
   <div id="map"></div>
   
@@ -167,7 +195,7 @@
         }
       }
 
-      // Independente de ter ou não Wake Lock, habilitamos o NoSleep.js
+      // Habilita o NoSleep.js
       noSleep.enable()
         .then(() => {
           console.log('NoSleep.js habilitado! A tela não deve apagar.');
@@ -177,11 +205,12 @@
         });
     }
 
-    // Evento de clique no botão para ativar ambas as técnicas
-    const wakeButton = document.getElementById('wakeButton');
-    wakeButton.addEventListener('click', () => {
+    // Evento do botão de início na modal de instruções
+    const startRouteButton = document.getElementById('startRouteButton');
+    startRouteButton.addEventListener('click', () => {
       activateWakeLock();
-      alert("Tentando manter a tela ligada. Em alguns dispositivos (iOS), pode haver limitações.");
+      // Fecha o modal de instruções para iniciar a rota
+      document.getElementById('instructionModal').style.display = 'none';
     });
   </script>
 </body>
