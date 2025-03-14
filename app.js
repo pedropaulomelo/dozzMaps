@@ -12,7 +12,7 @@ const server = http.createServer(app);
 const { Server } = require('socket.io');
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: 'https://dash.dozz.com.br',
     methods: ['GET', 'POST']
   }
 });
@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 3999;
 
 // Configura o CORS para o Express
 app.use(cors({
-  origin: 'http://localhost:3000'
+  origin: 'https://dash.dozz.com.br'
 }));
 
 // Middlewares para interpretar dados de formulários e JSON
